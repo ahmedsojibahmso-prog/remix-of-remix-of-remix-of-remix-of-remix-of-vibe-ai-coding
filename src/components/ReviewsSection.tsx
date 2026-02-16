@@ -64,17 +64,15 @@ const ReviewCard = ({ review }: { review: Review }) => {
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4 hover:border-brand-red/30 transition-colors duration-300">
         {/* Media */}
         {review.type === "video" && (
-          <button
-            onClick={() => setShowVideo(true)}
-            className="relative w-full aspect-video rounded-xl overflow-hidden bg-muted group"
-          >
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
-              <div className="w-14 h-14 rounded-full gradient-bg flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play className="h-6 w-6 text-primary-foreground ml-0.5" />
-              </div>
-            </div>
-            <div className="w-full h-full bg-muted" />
-          </button>
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-muted">
+            <iframe
+              src={review.media}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+            />
+          </div>
         )}
 
         {review.type === "screenshot" && (
