@@ -34,7 +34,7 @@ const HeroSection = () => {
         <div className="max-w-3xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl border border-border">
           <iframe
             className="w-full h-full"
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+            src="https://www.youtube.com/embed/f8gOToTxai4?si=MR-fCzf9zcWz5CYp"
             title="Course Introduction"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
