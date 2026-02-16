@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const fallbackGifts: Record<string, any[]> = {
 
 export default function DashboardGifts() {
   const { toast } = useToast();
+  useRealtimeSubscription("tools_gifts", ["gifts-list"]);
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [dbGifts, setDbGifts] = useState<any[]>([]);
 

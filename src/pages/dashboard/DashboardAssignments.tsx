@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function DashboardAssignments() {
   const { user } = useAuth();
   const { toast } = useToast();
+  useRealtimeSubscription("assignments", ["user-assignments"]);
+  useRealtimeSubscription("assignment_submissions", ["user-submissions"]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
