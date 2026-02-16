@@ -1,32 +1,117 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Play, ClipboardCheck, Clock, Flame, TrendingUp, Megaphone, Calendar } from "lucide-react";
+import { BookOpen, Play, ClipboardCheck, Clock, Flame, TrendingUp, Megaphone, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const stats = [
-  { label: "মডিউল সম্পন্ন", value: "8/12", percent: 67, icon: BookOpen, color: "text-info" },
-  { label: "ভিডিও দেখা হয়েছে", value: "42/58", percent: 72, icon: Play, color: "text-success" },
-  { label: "অ্যাসাইনমেন্ট", value: "6/10", percent: 60, icon: ClipboardCheck, color: "text-warning" },
-  { label: "শেখার সময়", value: "24.5 ঘন্টা", percent: 80, icon: Clock, color: "text-primary" },
-];
-
-const announcements = [
-  { title: "নতুন মডিউল যুক্ত হয়েছে: Advanced AI Prompting", time: "২ ঘন্টা আগে", type: "course_update" },
-  { title: "আগামীকাল Live Class: বিকাল ৫টায়", time: "৫ ঘন্টা আগে", type: "live_class" },
-  { title: "ঈদ অফার: ৩০% ছাড়!", time: "১ দিন আগে", type: "offer" },
-];
-
-const upcomingAssignments = [
-  { title: "AI Chatbot Project", module: "Module 5", dueIn: "৩ দিন বাকি", points: 100 },
-  { title: "Landing Page Design", module: "Module 3", dueIn: "৫ দিন বাকি", points: 80 },
-  { title: "API Integration Task", module: "Module 7", dueIn: "১ সপ্তাহ বাকি", points: 120 },
-];
-
 export default function DashboardHome() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
+
+  // Realtime subscriptions
+  useRealtimeSubscription("announcements", ["dashboard-announcements"]);
+  useRealtimeSubscription("assignments", ["dashboard-assignments"]);
+  useRealtimeSubscription("modules", ["dashboard-modules"]);
+  useRealtimeSubscription("lessons", ["dashboard-lessons"]);
+  useRealtimeSubscription("notifications", ["dashboard-notifications"]);
+
+  const { data: announcements = [] } = useQuery({
+    queryKey: ["dashboard-announcements"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("announcements")
+        .select("*")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["dashboard-assignments"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("assignments")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+  });
+
+  const { data: modules = [] } = useQuery({
+    queryKey: ["dashboard-modules"],
+    queryFn: async () => {
+      const { data } = await supabase.from("modules").select("*").order("order_index");
+      return data || [];
+    },
+  });
+
+  const { data: lessons = [] } = useQuery({
+    queryKey: ["dashboard-lessons"],
+    queryFn: async () => {
+      const { data } = await supabase.from("lessons").select("*").order("order_index");
+      return data || [];
+    },
+  });
+
+  const { data: progress = [] } = useQuery({
+    queryKey: ["dashboard-progress", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("user_progress").select("*").eq("user_id", user.id);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: submissions = [] } = useQuery({
+    queryKey: ["dashboard-submissions", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("assignment_submissions").select("*").eq("user_id", user.id);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const completedLessons = progress.filter((p: any) => p.completed).length;
+  const totalLessons = lessons.length;
+  const lessonPercent = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+  const completedAssignments = submissions.filter((s: any) => s.status === "graded").length;
+  const totalAssignments = assignments.length;
+  const assignmentPercent = totalAssignments ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
+
+  const stats = [
+    { label: "মডিউল", value: `${modules.length} টি`, percent: modules.length > 0 ? 100 : 0, icon: BookOpen, color: "text-info" },
+    { label: "ভিডিও দেখা হয়েছে", value: `${completedLessons}/${totalLessons}`, percent: lessonPercent, icon: Play, color: "text-success" },
+    { label: "অ্যাসাইনমেন্ট", value: `${completedAssignments}/${totalAssignments}`, percent: assignmentPercent, icon: ClipboardCheck, color: "text-warning" },
+    { label: "মোট লেসন", value: `${totalLessons} টি`, percent: totalLessons > 0 ? 100 : 0, icon: Clock, color: "text-primary" },
+  ];
+
+  const typeColors: Record<string, string> = {
+    course_update: "bg-success",
+    live_class: "bg-info",
+    offer: "bg-warning",
+    general: "bg-muted-foreground",
+    maintenance: "bg-destructive",
+  };
+
+  const formatTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 1) return "এইমাত্র";
+    if (hours < 24) return `${hours} ঘন্টা আগে`;
+    const days = Math.floor(hours / 24);
+    return `${days} দিন আগে`;
+  };
 
   return (
     <div className="space-y-6">
@@ -37,10 +122,6 @@ export default function DashboardHome() {
             স্বাগতম, {profile?.full_name || "শিক্ষার্থী"}! 👋
           </h1>
           <p className="text-muted-foreground mt-1">আজকের লার্নিং জার্নি শুরু করুন</p>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 rounded-lg border border-warning/20">
-          <Flame className="h-5 w-5 text-warning" />
-          <span className="text-sm font-semibold text-warning">🔥 ৭ দিনের স্ট্রিক!</span>
         </div>
       </div>
 
@@ -82,9 +163,13 @@ export default function DashboardHome() {
                   <Play className="h-8 w-8 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">1.3 First AI Prompt</p>
-                  <p className="text-xs text-muted-foreground">Module 1: Introduction</p>
-                  <Progress value={45} className="h-1.5 mt-2" />
+                  <p className="font-semibold text-sm truncate">
+                    {lessons.length > 0 ? lessons[0].title : "কোনো লেসন নেই"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {modules.length > 0 ? modules[0].title : "মডিউল যোগ হয়নি"}
+                  </p>
+                  <Progress value={lessonPercent} className="h-1.5 mt-2" />
                 </div>
               </div>
               <Button size="sm" className="w-full gradient-bg text-primary-foreground" onClick={() => navigate("/dashboard/course")}>
@@ -103,38 +188,50 @@ export default function DashboardHome() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {announcements.map((ann, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
-                <div className={`w-2 h-2 rounded-full mt-2 ${ann.type === 'offer' ? 'bg-warning' : ann.type === 'live_class' ? 'bg-info' : 'bg-success'}`} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{ann.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{ann.time}</p>
+            {announcements.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">কোনো ঘোষণা নেই</p>
+            ) : (
+              announcements.slice(0, 3).map((ann: any) => (
+                <div key={ann.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${typeColors[ann.type] || typeColors.general}`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{ann.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatTime(ann.created_at)}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Upcoming Assignments + Learning Stats */}
+      {/* Upcoming Assignments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              আসন্ন অ্যাসাইনমেন্ট
+              অ্যাসাইনমেন্ট
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {upcomingAssignments.map((asn, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium">{asn.title}</p>
-                  <p className="text-xs text-muted-foreground">{asn.module} · {asn.points} পয়েন্ট</p>
+            {assignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">কোনো অ্যাসাইনমেন্ট নেই</p>
+            ) : (
+              assignments.slice(0, 3).map((asn: any) => (
+                <div key={asn.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium">{asn.title}</p>
+                    <p className="text-xs text-muted-foreground">{asn.max_points} পয়েন্ট</p>
+                  </div>
+                  {asn.due_date && (
+                    <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-1 rounded">
+                      {new Date(asn.due_date).toLocaleDateString("bn-BD")}
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-1 rounded">{asn.dueIn}</span>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -142,23 +239,26 @@ export default function DashboardHome() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              সাপ্তাহিক অ্যাক্টিভিটি
+              সামগ্রিক অবস্থা
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {["শনি", "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র"].map((day, i) => {
-                const values = [45, 60, 30, 80, 55, 90, 70];
-                return (
-                  <div key={day} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-8">{day}</span>
-                    <div className="flex-1 bg-secondary rounded-full h-2">
-                      <div className="gradient-bg h-2 rounded-full transition-all" style={{ width: `${values[i]}%` }} />
-                    </div>
-                    <span className="text-xs text-muted-foreground w-8">{values[i]}m</span>
-                  </div>
-                );
-              })}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">কোর্স প্রগ্রেস</span>
+                <span className="text-sm font-bold">{lessonPercent}%</span>
+              </div>
+              <Progress value={lessonPercent} className="h-3" />
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{modules.length}</p>
+                  <p className="text-xs text-muted-foreground">মডিউল</p>
+                </div>
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-2xl font-bold text-success">{completedLessons}</p>
+                  <p className="text-xs text-muted-foreground">লেসন সম্পন্ন</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

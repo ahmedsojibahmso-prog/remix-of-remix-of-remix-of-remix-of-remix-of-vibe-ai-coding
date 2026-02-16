@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function DashboardQA() {
   const { user } = useAuth();
   const { toast } = useToast();
+  useRealtimeSubscription("qa_questions", ["qa-questions"]);
+  useRealtimeSubscription("qa_answers", ["qa-answers"]);
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");

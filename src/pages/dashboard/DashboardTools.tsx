@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const emojiMap: Record<string, string> = {
 
 export default function DashboardTools() {
   const { toast } = useToast();
+  useRealtimeSubscription("tools_gifts", ["tools-list"]);
   const [dbTools, setDbTools] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

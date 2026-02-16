@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -13,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function DashboardCourse() {
   const { user } = useAuth();
   const { toast } = useToast();
+  useRealtimeSubscription("modules", ["course-modules"]);
+  useRealtimeSubscription("lessons", ["course-lessons"]);
   const [modules, setModules] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [progress, setProgress] = useState<any[]>([]);

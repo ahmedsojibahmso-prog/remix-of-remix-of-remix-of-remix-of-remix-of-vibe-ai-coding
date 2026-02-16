@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, ThumbsUp, Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function DashboardReviews() {
   const { user } = useAuth();
   const { toast } = useToast();
+  useRealtimeSubscription("reviews", ["reviews-list"]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
