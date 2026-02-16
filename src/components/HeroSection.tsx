@@ -20,6 +20,16 @@ const HeroSection = () => {
           <span><GradientText>1000+</GradientText> students enrolled</span>
         </div>
 
+        {/* Headline */}
+        <div className="max-w-3xl mx-auto space-y-3">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
+            AI এর যুগে হার্ড ওয়ার্ক করে নয়, <GradientText>স্মার্ট স্কিল</GradientText> দিয়েই আর্নিং ও ক্যারিয়ার সেভ করতে হয়।
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            কোড না জেনেও Vibe Coding দিয়ে মাত্র ৩০ মিনিটে প্রফেশনাল ওয়েবসাইট, অ্যাপ ও সফটওয়্যার বিল্ড করুন।
+          </p>
+        </div>
+
         {/* YouTube Video */}
         <div className="max-w-3xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl border border-border">
           <iframe
