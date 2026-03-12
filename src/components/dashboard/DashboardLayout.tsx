@@ -58,6 +58,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Block unapproved users
+  if (profile && profile.admin_status !== "approved") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+            <Loader2 className="h-8 w-8 text-amber-600" />
+          </div>
+          <h2 className="text-xl font-bold">অপেক্ষমান অনুমোদন ⏳</h2>
+          <p className="text-muted-foreground">আপনার একাউন্ট এখনো Admin দ্বারা অনুমোদিত হয়নি। অনুগ্রহ করে অপেক্ষা করুন।</p>
+          <Button variant="outline" onClick={signOut}>লগআউট</Button>
+        </div>
+      </div>
+    );
+  }
+
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : user.email?.slice(0, 2).toUpperCase() || "U";

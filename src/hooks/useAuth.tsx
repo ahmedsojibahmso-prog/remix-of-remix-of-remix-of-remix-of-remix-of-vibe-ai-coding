@@ -13,6 +13,7 @@ interface Profile {
   skills: string[] | null;
   github_url: string | null;
   linkedin_url: string | null;
+  admin_status: string;
 }
 
 interface AuthContextType {
